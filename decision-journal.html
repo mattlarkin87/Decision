@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Journal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --border: #e0d9ce;
+    --text: #1c1c1c;
+    --muted: #8a8278;
+    --gold: #b8860b;
+    --gold-light: #f5e6b8;
+    --green: #2d6a4f;
+    --green-light: #d8f3dc;
+    --red: #9b2335;
+    --red-light: #fde8eb;
+    --phase-active: #1c1c1c;
+    --phase-done: #2d6a4f;
+    --phase-inactive: #c5bdb4;
+    --radius: 10px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  header p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Phase nav */
+  .phase-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .phase-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--phase-inactive);
+    border-right: 1px solid var(--border);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .phase-btn:last-child { border-right: none; }
+  .phase-btn.active {
+    background: var(--text);
+    color: #fff;
+  }
+  .phase-btn.done {
+    color: var(--green);
+    background: var(--green-light);
+  }
+  .phase-btn .tick {
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Section card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .card p.hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* Inputs */
+  textarea, input[type="text"], select {
+    width: 100%;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    resize: vertical;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  textarea:focus, input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: #fff;
+  }
+  textarea { min-height: 80px; }
+
+  /* Tag input */
+  .tag-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-height: 44px;
+    cursor: text;
+    transition: border-color 0.15s;
+  }
+  .tag-wrap:focus-within { border-color: var(--gold); background: #fff; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--gold-light);
+    border: 1px solid #d4a017;
+    color: #7a5c00;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .tag button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    color: #7a5c00;
+    padding: 0;
+  }
+  .tag-input {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    background: transparent;
+    padding: 2px 4px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  /* Probability slider */
+  .prob-wrap { display: flex; align-items: center; gap: 14px; }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+  .prob-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--gold);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  /* Options list */
+  .options-list { display: flex; flex-direction: column; gap: 8px; }
+  .option-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .option-row input[type="text"] { flex: 1; }
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+  .btn-icon:hover { border-color: var(--red); color: var(--red); }
+  .btn-add {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gold);
+    background: none;
+    border: 1px dashed #d4a017;
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .btn-add:hover { background: var(--gold-light); }
+
+  /* Radio group */
+  .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radio-btn {
+    flex: 1;
+    min-width: 100px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    background: var(--bg);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .radio-btn input { display: none; }
+  .radio-btn span { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+  .radio-btn:has(input:checked) {
+    border-color: var(--gold);
+    background: var(--gold-light);
+  }
+  .radio-btn:has(input:checked) span { color: #7a5c00; }
+
+  /* Action buttons */
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  .btn-primary {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 11px 24px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: none;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 11px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+
+  /* Saved decisions list */
+  .decisions-list { display: flex; flex-direction: column; gap: 12px; }
+  .decision-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .decision-item:hover { border-color: var(--gold); box-shadow: var(--shadow); }
+  .decision-item h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+  .decision-item .meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .badge-pending { background: var(--gold-light); color: #7a5c00; }
+  .badge-reviewed { background: var(--green-light); color: var(--green); }
+
+  /* Review outcome colours */
+  .outcome-better { color: var(--green); }
+  .outcome-worse { color: var(--red); }
+  .outcome-expected { color: var(--muted); }
+
+  /* Summary panel */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .summary-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-stat .big {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--gold);
+  }
+  .summary-stat .label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .insight-box {
+    background: var(--gold-light);
+    border: 1px solid #d4a017;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-size: 0.82rem;
+    color: #5a4200;
+    line-height: 1.6;
+  }
+  .insight-box h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: #7a5c00;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+  .empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .review-decision-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+  .review-decision-meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; }
+
+  .info-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .info-chip {
+    font-size: 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 2px 10px;
+    color: var(--muted);
+  }
+
+  select { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Decision Journal</h1>
+    <p>Annie Duke · Thinking in Bets</p>
+  </header>
+
+  <nav class="phase-nav">
+    <button class="phase-btn active" onclick="showTab('frame')" id="tab-frame">① Frame</button>
+    <button class="phase-btn" onclick="showTab('review')" id="tab-review">② Review</button>
+    <button class="phase-btn" onclick="showTab('log')" id="tab-log">③ Log</button>
+  </nav>
+
+  <!-- ===== FRAME PANEL ===== -->
+  <div class="panel active" id="panel-frame">
+
+    <div class="card">
+      <div class="card-label">The Decision</div>
+      <h3>What are you deciding?</h3>
+      <p class="hint">Be specific. Vague decisions lead to vague thinking.</p>
+      <textarea id="f-topic" placeholder="e.g. Whether to accept the General Manager role offer…" rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Stakeholders</div>
+      <h3>Who is affected?</h3>
+      <p class="hint">List everyone who has skin in this game — including future-you.</p>
+      <div class="tag-wrap" id="stakeholder-wrap" onclick="focusTagInput('stakeholder-input')">
+        <input class="tag-input" id="stakeholder-input" placeholder="Type a name and press Enter…" onkeydown="addTag(event, 'stakeholders', 'stakeholder-wrap', 'stakeholder-input')">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Options Considered</div>
+      <h3>What are your real alternatives?</h3>
+      <p class="hint">Duke: the quality of a decision depends on knowing what you're giving up. Name at least two.</p>
+      <div class="options-list" id="options-list">
+        <div class="option-row">
+          <input type="text" placeholder="Option A…">
+          <button class="btn-icon" onclick="removeOption(this)" title="Remove">✕</button>
+        </div>
+        <div class="option-row">
+          <input type="text" placeholder="Option B…">
+          <button class="btn-icon" onclick="removeOption(this)" title="Remove">✕</button>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addOption()">+ Add option</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Key Factors</div>
+      <h3>What matters most to this decision?</h3>
+      <p class="hint">Financial, relational, professional, values-based — name the lenses you're weighing.</p>
+      <div class="tag-wrap" id="factors-wrap" onclick="focusTagInput('factors-input')">
+        <input class="tag-input" id="factors-input" placeholder="e.g. financial risk, family impact…" onkeydown="addTag(event, 'factors', 'factors-wrap', 'factors-input')">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Pre-mortem</div>
+      <h3>Imagine it fails. Why?</h3>
+      <p class="hint">Assume one year from now this decision looks terrible. What went wrong?</p>
+      <textarea id="f-premortem-fail" placeholder="The main risks were…" rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Pre-parade</div>
+      <h3>Imagine it succeeds. Then what?</h3>
+      <p class="hint">Duke's "10/10/10": how does this look in 10 mins, 10 months, 10 years if it works?</p>
+      <textarea id="f-premortem-win" placeholder="In the best case scenario…" rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Your Bet</div>
+      <h3>What's your chosen path & confidence?</h3>
+      <textarea id="f-choice" placeholder="I'm going to… because…" rows="3" style="margin-bottom:14px;"></textarea>
+      <p class="hint" style="margin-bottom:10px;">How confident are you this is the right call?</p>
+      <div class="prob-wrap">
+        <input type="range" min="0" max="100" value="65" id="f-confidence" oninput="document.getElementById('conf-val').textContent=this.value+'%'">
+        <span class="prob-val" id="conf-val">65%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Expected Outcome</div>
+      <h3>What do you predict will happen?</h3>
+      <p class="hint">Write down your prediction <em>before</em> the result. This is the core of the journal.</p>
+      <textarea id="f-prediction" placeholder="I expect that within [timeframe]…" rows="3"></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" onclick="clearFrame()">Clear</button>
+      <button class="btn-primary" onclick="saveDecision()">Save Decision →</button>
+    </div>
+  </div>
+
+  <!-- ===== REVIEW PANEL ===== -->
+  <div class="panel" id="panel-review">
+    <div id="review-select-area">
+      <div class="card">
+        <div class="card-label">Select Decision</div>
+        <h3>Which decision are you reviewing?</h3>
+        <p class="hint">Only decisions you've already framed appear here.</p>
+        <select id="review-picker" onchange="loadReviewDecision()">
+          <option value="">— Choose a saved decision —</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="review-form" style="display:none;">
+      <div class="card">
+        <div class="review-decision-title" id="rv-title"></div>
+        <div class="review-decision-meta" id="rv-meta"></div>
+        <div class="info-row" id="rv-chips"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Original Prediction</div>
+        <h3>What did you expect?</h3>
+        <div id="rv-prediction" style="font-size:0.88rem;color:var(--muted);line-height:1.6;background:var(--bg);border-radius:6px;padding:10px 12px;border:1px solid var(--border);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Actual Outcome</div>
+        <h3>What actually happened?</h3>
+        <p class="hint">Be honest. Resist the urge to rewrite history.</p>
+        <textarea id="rv-outcome" placeholder="What occurred was…" rows="3"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Outcome vs Expectation</div>
+        <h3>How did it compare?</h3>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="better"><span>😊 Better than expected</span></label>
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="expected" checked><span>😐 As expected</span></label>
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="worse"><span>😬 Worse than expected</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Resulting vs Deciding</div>
+        <h3>Was it a good decision, regardless of outcome?</h3>
+        <p class="hint">Duke's core principle: a bad outcome doesn't make a bad decision. Evaluate your process.</p>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="good"><span>✓ Good process</span></label>
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="mixed" checked><span>~ Mixed</span></label>
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="poor"><span>✗ Poor process</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Luck vs Skill</div>
+        <h3>How much was luck a factor?</h3>
+        <div class="prob-wrap">
+          <input type="range" min="0" max="100" value="30" id="rv-luck" oninput="document.getElementById('luck-val').textContent=this.value+'%'">
+          <span class="prob-val" id="luck-val">30%</span>
+        </div>
+        <p class="hint" style="margin-top:10px;">0% = entirely skill/process · 100% = entirely luck</p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Learnings</div>
+        <h3>What will you do differently?</h3>
+        <p class="hint">This is the compound interest of good decision-making — what updates your model?</p>
+        <textarea id="rv-learnings" placeholder="Next time I will… / I underweighted… / I should have asked…" rows="4"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" onclick="cancelReview()">Cancel</button>
+        <button class="btn-primary" onclick="saveReview()">Save Review ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOG PANEL ===== -->
+  <div class="panel" id="panel-log">
+    <div class="summary-grid" id="summary-grid" style="display:none;">
+      <div class="summary-stat">
+        <div class="big" id="stat-total">0</div>
+        <div class="label">Decisions</div>
+      </div>
+      <div class="summary-stat">
+        <div class="big" id="stat-reviewed">0</div>
+        <div class="label">Reviewed</div>
+      </div>
+      <div class="summary-stat">
+        <div class="big" id="stat-avg-conf">—</div>
+        <div class="label">Avg Confidence</div>
+      </div>
+      <div class="summary-stat">
+        <div class="big" id="stat-calibration">—</div>
+        <div class="label">Calibration</div>
+      </div>
+    </div>
+
+    <div class="insight-box" id="insight-box" style="display:none; margin-bottom:16px;">
+      <h4>Pattern Insight</h4>
+      <div id="insight-text"></div>
+    </div>
+
+    <div class="decisions-list" id="decisions-list">
+      <div class="empty-state">
+        <div class="emoji">🎲</div>
+        <p>No decisions yet.<br>Go to <strong>Frame</strong> to log your first one.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- State ----
+  let tags = { stakeholders: [], factors: [] };
+  let decisions = JSON.parse(localStorage.getItem('dj-decisions') || '[]');
+
+  // ---- Tab nav ----
+  function showTab(tab) {
+    ['frame','review','log'].forEach(t => {
+      document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+      document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    });
+    if (tab === 'review') populateReviewPicker();
+    if (tab === 'log') renderLog();
+  }
+
+  // ---- Tag inputs ----
+  function focusTagInput(id) { document.getElementById(id).focus(); }
+
+  function addTag(e, key, wrapId, inputId) {
+    if (e.key !== 'Enter' && e.key !== ',') return;
+    e.preventDefault();
+    const inp = document.getElementById(inputId);
+    const val = inp.value.trim().replace(/,$/, '');
+    if (!val) return;
+    tags[key].push(val);
+    inp.value = '';
+    renderTags(key, wrapId, inputId);
+  }
+
+  function removeTagItem(key, wrapId, inputId, idx) {
+    tags[key].splice(idx, 1);
+    renderTags(key, wrapId, inputId);
+  }
+
+  function renderTags(key, wrapId, inputId) {
+    const wrap = document.getElementById(wrapId);
+    const inp = document.getElementById(inputId);
+    wrap.innerHTML = '';
+    tags[key].forEach((t, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.innerHTML = `${t}<button onclick="removeTagItem('${key}','${wrapId}','${inputId}',${i})" title="Remove">×</button>`;
+      wrap.appendChild(span);
+    });
+    wrap.appendChild(inp);
+  }
+
+  // ---- Options ----
+  function addOption() {
+    const list = document.getElementById('options-list');
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.innerHTML = `<input type="text" placeholder="Option…"><button class="btn-icon" onclick="removeOption(this)" title="Remove">✕</button>`;
+    list.appendChild(row);
+  }
+  function removeOption(btn) {
+    const rows = document.querySelectorAll('.option-row');
+    if (rows.length <= 1) return;
+    btn.parentElement.remove();
+  }
+
+  // ---- Save decision ----
+  function saveDecision() {
+    const topic = document.getElementById('f-topic').value.trim();
+    if (!topic) { alert('Please describe the decision first.'); return; }
+
+    const options = [...document.querySelectorAll('#options-list .option-row input')].map(i => i.value.trim()).filter(Boolean);
+    const decision = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'}),
+      topic,
+      stakeholders: [...tags.stakeholders],
+      factors: [...tags.factors],
+      options,
+      premortFail: document.getElementById('f-premortem-fail').value.trim(),
+      premortWin: document.getElementById('f-premortem-win').value.trim(),
+      choice: document.getElementById('f-choice').value.trim(),
+      confidence: +document.getElementById('f-confidence').value,
+      prediction: document.getElementById('f-prediction').value.trim(),
+      status: 'pending',
+      review: null
+    };
+
+    decisions.unshift(decision);
+    save();
+    clearFrame();
+    showTab('log');
+  }
+
+  function clearFrame() {
+    document.getElementById('f-topic').value = '';
+    document.getElementById('f-premortem-fail').value = '';
+    document.getElementById('f-premortem-win').value = '';
+    document.getElementById('f-choice').value = '';
+    document.getElementById('f-prediction').value = '';
+    document.getElementById('f-confidence').value = 65;
+    document.getElementById('conf-val').textContent = '65%';
+    tags.stakeholders = [];
+    tags.factors = [];
+    renderTags('stakeholders','stakeholder-wrap','stakeholder-input');
+    renderTags('factors','factors-wrap','factors-input');
+    document.getElementById('options-list').innerHTML = `
+      <div class="option-row"><input type="text" placeholder="Option A…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>
+      <div class="option-row"><input type="text" placeholder="Option B…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>`;
+  }
+
+  // ---- Review ----
+  function populateReviewPicker() {
+    const sel = document.getElementById('review-picker');
+    sel.innerHTML = '<option value="">— Choose a saved decision —</option>';
+    decisions.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.topic.substring(0,55)}${d.topic.length>55?'…':''} (${d.date})${d.status==='reviewed'?' ✓':''}`;
+      sel.appendChild(opt);
+    });
+    document.getElementById('review-form').style.display = 'none';
+  }
+
+  function loadReviewDecision() {
+    const id = +document.getElementById('review-picker').value;
+    if (!id) { document.getElementById('review-form').style.display = 'none'; return; }
+    const d = decisions.find(x => x.id === id);
+    if (!d) return;
+
+    document.getElementById('rv-title').textContent = d.topic;
+    document.getElementById('rv-meta').textContent = `Framed ${d.date} · Confidence ${d.confidence}%`;
+    const chips = document.getElementById('rv-chips');
+    chips.innerHTML = '';
+    [...d.stakeholders, ...d.factors].forEach(t => {
+      const c = document.createElement('span');
+      c.className = 'info-chip';
+      c.textContent = t;
+      chips.appendChild(c);
+    });
+    document.getElementById('rv-prediction').textContent = d.prediction || '(no prediction recorded)';
+
+    // Pre-fill if already reviewed
+    if (d.review) {
+      document.getElementById('rv-outcome').value = d.review.outcome || '';
+      document.querySelector(`input[name="outcome-cmp"][value="${d.review.outcomeCmp}"]`).checked = true;
+      document.querySelector(`input[name="process-cmp"][value="${d.review.processCmp}"]`).checked = true;
+      document.getElementById('rv-luck').value = d.review.luck || 30;
+      document.getElementById('luck-val').textContent = (d.review.luck||30)+'%';
+      document.getElementById('rv-learnings').value = d.review.learnings || '';
+    } else {
+      document.getElementById('rv-outcome').value = '';
+      document.querySelector('input[name="outcome-cmp"][value="expected"]').checked = true;
+      document.querySelector('input[name="process-cmp"][value="mixed"]').checked = true;
+      document.getElementById('rv-luck').value = 30;
+      document.getElementById('luck-val').textContent = '30%';
+      document.getElementById('rv-learnings').value = '';
+    }
+
+    document.getElementById('review-form').style.display = 'block';
+  }
+
+  function cancelReview() {
+    document.getElementById('review-picker').value = '';
+    document.getElementById('review-form').style.display = 'none';
+  }
+
+  function saveReview() {
+    const id = +document.getElementById('review-picker').value;
+    const d = decisions.find(x => x.id === id);
+    if (!d) return;
+    d.status = 'reviewed';
+    d.review = {
+      outcome: document.getElementById('rv-outcome').value.trim(),
+      outcomeCmp: document.querySelector('input[name="outcome-cmp"]:checked').value,
+      processCmp: document.querySelector('input[name="process-cmp"]:checked').value,
+      luck: +document.getElementById('rv-luck').value,
+      learnings: document.getElementById('rv-learnings').value.trim(),
+      reviewDate: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})
+    };
+    save();
+    cancelReview();
+    showTab('log');
+  }
+
+  // ---- Log ----
+  function renderLog() {
+    const list = document.getElementById('decisions-list');
+    const grid = document.getElementById('summary-grid');
+    const insightBox = document.getElementById('insight-box');
+
+    if (!decisions.length) {
+      grid.style.display = 'none';
+      insightBox.style.display = 'none';
+      list.innerHTML = `<div class="empty-state"><div class="emoji">🎲</div><p>No decisions yet.<br>Go to <strong>Frame</strong> to log your first one.</p></div>`;
+      return;
+    }
+
+    grid.style.display = 'grid';
+    const reviewed = decisions.filter(d => d.status === 'reviewed');
+    const avgConf = Math.round(decisions.reduce((s,d)=>s+d.confidence,0)/decisions.length);
+    const calibration = reviewed.length
+      ? Math.round(reviewed.filter(d => d.review.outcomeCmp==='expected').length / reviewed.length * 100) + '%'
+      : '—';
+
+    document.getElementById('stat-total').textContent = decisions.length;
+    document.getElementById('stat-reviewed').textContent = reviewed.length;
+    document.getElementById('stat-avg-conf').textContent = avgConf + '%';
+    document.getElementById('stat-calibration').textContent = calibration;
+
+    // Insight
+    if (reviewed.length >= 2) {
+      const overconfident = reviewed.filter(d => d.review.outcomeCmp==='worse' && d.confidence >= 70).length;
+      const goodProcess = reviewed.filter(d => d.review.processCmp==='good').length;
+      let insight = '';
+      if (overconfident > reviewed.length * 0.4) insight = `You've been over-confident in ${overconfident} of ${reviewed.length} reviewed decisions — high confidence often preceded worse-than-expected outcomes. Widen your uncertainty bands.`;
+      else if (goodProcess / reviewed.length > 0.7) insight = `Strong pattern: ${goodProcess} of ${reviewed.length} reviewed decisions had good process regardless of outcome. Keep trusting the process, not the result.`;
+      else insight = `Keep reviewing decisions — patterns in your reasoning style will emerge as the log grows.`;
+      document.getElementById('insight-text').textContent = insight;
+      insightBox.style.display = 'block';
+    } else {
+      insightBox.style.display = 'none';
+    }
+
+    list.innerHTML = '';
+    decisions.forEach(d => {
+      const item = document.createElement('div');
+      item.className = 'decision-item';
+      const badge = d.status === 'reviewed'
+        ? `<span class="badge badge-reviewed">Reviewed</span>`
+        : `<span class="badge badge-pending">Pending review</span>`;
+      let reviewLine = '';
+      if (d.review) {
+        const cmpLabel = {better:'Better than expected',expected:'As expected',worse:'Worse than expected'};
+        const cmpClass = {better:'outcome-better',expected:'outcome-expected',worse:'outcome-worse'};
+        reviewLine = `<span class="${cmpClass[d.review.outcomeCmp]}">${cmpLabel[d.review.outcomeCmp]}</span> · Luck ${d.review.luck}%`;
+      }
+      item.innerHTML = `
+        <h4>${d.topic}</h4>
+        <div class="meta">
+          ${badge}
+          <span>${d.date}</span>
+          <span>Confidence ${d.confidence}%</span>
+          ${reviewLine ? `<span>${reviewLine}</span>` : ''}
+        </div>`;
+      item.onclick = () => openDecisionDetail(d);
+      list.appendChild(item);
+    });
+  }
+
+  function openDecisionDetail(d) {
+    // Quick detail view — navigate to review with that decision pre-selected
+    showTab('review');
+    setTimeout(() => {
+      document.getElementById('review-picker').value = d.id;
+      loadReviewDecision();
+    }, 50);
+  }
+
+  // ---- Persist ----
+  function save() {
+    localStorage.setItem('dj-decisions', JSON.stringify(decisions));
+  }
+</script>
+</body>
+</html>
