@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Journal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --border: #e0d9ce;
+    --text: #1c1c1c;
+    --muted: #8a8278;
+    --gold: #b8860b;
+    --gold-light: #f5e6b8;
+    --green: #2d6a4f;
+    --green-light: #d8f3dc;
+    --red: #9b2335;
+    --red-light: #fde8eb;
+    --phase-inactive: #c5bdb4;
+    --radius: 10px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  header p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .phase-nav {
+    display: flex;
+    margin-bottom: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .phase-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--phase-inactive);
+    border-right: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .phase-btn:last-child { border-right: none; }
+  .phase-btn.active { background: var(--text); color: #fff; }
+  .phase-btn.done { color: var(--green); background: var(--green-light); }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card.tilt-warning { border-color: #e67e22; background: #fef9f0; }
+
+  .card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .card-label.emotion { color: #8e44ad; }
+  .card-label.export-lbl { color: var(--green); }
+
+  .card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .card p.hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  textarea, input[type="text"], select {
+    width: 100%;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    resize: vertical;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  textarea:focus, input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: #fff;
+  }
+  textarea { min-height: 80px; }
+
+  .tag-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-height: 44px;
+    cursor: text;
+    transition: border-color 0.15s;
+  }
+  .tag-wrap:focus-within { border-color: var(--gold); background: #fff; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--gold-light);
+    border: 1px solid #d4a017;
+    color: #7a5c00;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .tag button { background: none; border: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: #7a5c00; padding: 0; }
+  .tag-input { flex: 1; min-width: 120px; border: none; background: transparent; padding: 2px 4px; font-family: 'Nunito', sans-serif; font-size: 0.85rem; outline: none; }
+
+  /* Emoji mood picker */
+  .emoji-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .emoji-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 8px 6px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    transition: all 0.15s;
+    min-width: 56px;
+    flex: 1;
+  }
+  .emoji-opt:hover { border-color: #8e44ad; background: #f5eef8; }
+  .emoji-opt.selected { border-color: #8e44ad; background: #f5eef8; }
+  .emoji-opt input { display: none; }
+  .emoji-opt .emo { font-size: 1.5rem; line-height: 1; }
+  .emoji-opt .emo-label { font-size: 0.63rem; color: var(--muted); font-weight: 600; text-align: center; }
+
+  .tilt-alert {
+    display: none;
+    background: #fef3cd;
+    border: 1px solid #e67e22;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: #7e5109;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+  .tilt-alert.show { display: block; }
+
+  .prob-wrap { display: flex; align-items: center; gap: 14px; }
+  input[type="range"] { flex: 1; accent-color: var(--gold); cursor: pointer; }
+  .prob-val { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 600; color: var(--gold); min-width: 52px; text-align: right; }
+
+  .options-list { display: flex; flex-direction: column; gap: 8px; }
+  .option-row { display: flex; gap: 8px; align-items: flex-start; }
+  .option-row input[type="text"] { flex: 1; }
+  .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; width: 36px; height: 36px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; color: var(--muted); }
+  .btn-icon:hover { border-color: var(--red); color: var(--red); }
+  .btn-add { font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 600; color: var(--gold); background: none; border: 1px dashed #d4a017; border-radius: 6px; padding: 7px 14px; cursor: pointer; margin-top: 6px; transition: all 0.15s; width: 100%; }
+  .btn-add:hover { background: var(--gold-light); }
+
+  .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radio-btn { flex: 1; min-width: 90px; border: 1px solid var(--border); border-radius: 6px; padding: 10px 8px; cursor: pointer; background: var(--bg); transition: all 0.15s; text-align: center; }
+  .radio-btn input { display: none; }
+  .radio-btn span { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+  .radio-btn:has(input:checked) { border-color: var(--gold); background: var(--gold-light); }
+  .radio-btn:has(input:checked) span { color: #7a5c00; }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+  .btn-primary { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem; background: var(--text); color: #fff; border: none; border-radius: 7px; padding: 11px 24px; cursor: pointer; letter-spacing: 0.04em; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary { font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 0.85rem; background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 7px; padding: 11px 18px; cursor: pointer; transition: all 0.15s; }
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+  .btn-green { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem; background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 11px 20px; cursor: pointer; transition: opacity 0.15s; }
+  .btn-green:hover { opacity: 0.85; }
+  .btn-outline-green { font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 0.85rem; background: none; color: var(--green); border: 1px solid var(--green); border-radius: 7px; padding: 11px 18px; cursor: pointer; transition: all 0.15s; }
+  .btn-outline-green:hover { background: var(--green-light); }
+
+  .export-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+  #import-file { display: none; }
+
+  .decisions-list { display: flex; flex-direction: column; gap: 12px; }
+  .decision-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; cursor: pointer; transition: all 0.15s; }
+  .decision-item:hover { border-color: var(--gold); box-shadow: var(--shadow); }
+  .decision-item h4 { font-family: 'Playfair Display', serif; font-size: 0.95rem; margin-bottom: 4px; }
+  .decision-item .meta { font-size: 0.75rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .badge-pending { background: var(--gold-light); color: #7a5c00; }
+  .badge-reviewed { background: var(--green-light); color: var(--green); }
+  .outcome-better { color: var(--green); }
+  .outcome-worse { color: var(--red); }
+  .outcome-expected { color: var(--muted); }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .summary-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .summary-stat .big { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 600; color: var(--gold); }
+  .summary-stat .label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+  .insight-box { background: var(--gold-light); border: 1px solid #d4a017; border-radius: var(--radius); padding: 16px 18px; font-size: 0.82rem; color: #5a4200; line-height: 1.6; margin-bottom: 16px; }
+  .insight-box h4 { font-family: 'Playfair Display', serif; font-size: 0.95rem; margin-bottom: 6px; color: #7a5c00; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .review-decision-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 4px; }
+  .review-decision-meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; }
+  .info-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .info-chip { font-size: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; color: var(--muted); }
+  .emotion-chip { font-size: 0.75rem; background: #f5eef8; border: 1px solid #d7bde2; border-radius: 99px; padding: 2px 10px; color: #8e44ad; }
+
+  .attribution { text-align: center; font-size: 0.72rem; color: var(--muted); margin-top: 32px; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Decision Journal</h1>
+    <p>Inspired by Annie Duke · Thinking in Bets &amp; Quit</p>
+  </header>
+
+  <nav class="phase-nav">
+    <button class="phase-btn active" onclick="showTab('frame')" id="tab-frame">① Frame</button>
+    <button class="phase-btn" onclick="showTab('review')" id="tab-review">② Review</button>
+    <button class="phase-btn" onclick="showTab('log')" id="tab-log">③ Log</button>
+  </nav>
+
+  <!-- ===== FRAME ===== -->
+  <div class="panel active" id="panel-frame">
+
+    <div class="card">
+      <div class="card-label">The Decision</div>
+      <h3>What are you deciding?</h3>
+      <p class="hint">Be specific. Vague decisions lead to vague thinking.</p>
+      <textarea id="f-topic" placeholder="e.g. Whether to accept the General Manager role offer…" rows="3"></textarea>
+    </div>
+
+    <div class="card" id="headspace-card">
+      <div class="card-label emotion">Headspace · Tilt Check</div>
+      <h3>How are you feeling right now?</h3>
+      <p class="hint">Duke: your emotional state is a direct input to decision quality. Anxiety, pressure, and depletion bias toward loss aversion and short-termism. Euphoria biases toward overconfidence. Be honest.</p>
+      <div class="emoji-grid" id="mood-grid">
+        <label class="emoji-opt" onclick="selectMood(this,'calm')"><input type="radio" name="mood" value="calm"><span class="emo">😌</span><span class="emo-label">Calm</span></label>
+        <label class="emoji-opt" onclick="selectMood(this,'focused')"><input type="radio" name="mood" value="focused"><span class="emo">🎯</span><span class="emo-label">Focused</span></label>
+        <label class="emoji-opt" onclick="selectMood(this,'anxious')"><input type="radio" name="mood" value="anxious"><span class="emo">😰</span><span class="emo-label">Anxious</span></label>
+        <label class="emoji-opt" onclick="selectMood(this,'pressured')"><input type="radio" name="mood" value="pressured"><span class="emo">😤</span><span class="emo-label">Pressured</span></label>
+        <label class="emoji-opt" onclick="selectMood(this,'excited')"><input type="radio" name="mood" value="excited"><span class="emo">🤩</span><span class="emo-label">Excited</span></label>
+        <label class="emoji-opt" onclick="selectMood(this,'depleted')"><input type="radio" name="mood" value="depleted"><span class="emo">😔</span><span class="emo-label">Depleted</span></label>
+      </div>
+      <div class="tilt-alert" id="tilt-alert">
+        ⚠️ <strong>Tilt warning.</strong> You may be on tilt. Duke's core advice: if you can wait, wait. If you can't, explicitly name what emotion is pulling at your reasoning before you proceed.
+      </div>
+      <textarea id="f-headspace-note" placeholder="Optional: what's driving this feeling, and how might it be colouring this decision?" rows="2" style="margin-top:12px;"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Stakeholders</div>
+      <h3>Who is affected?</h3>
+      <p class="hint">List everyone who has skin in this game — including future-you.</p>
+      <div class="tag-wrap" id="stakeholder-wrap" onclick="focusTagInput('stakeholder-input')">
+        <input class="tag-input" id="stakeholder-input" placeholder="Type a name and press Enter…" onkeydown="addTag(event,'stakeholders','stakeholder-wrap','stakeholder-input')">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Options Considered</div>
+      <h3>What are your real alternatives?</h3>
+      <p class="hint">The quality of a decision depends on knowing what you're giving up. Name at least two.</p>
+      <div class="options-list" id="options-list">
+        <div class="option-row"><input type="text" placeholder="Option A…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>
+        <div class="option-row"><input type="text" placeholder="Option B…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>
+      </div>
+      <button class="btn-add" onclick="addOption()">+ Add option</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Key Factors</div>
+      <h3>What matters most to this decision?</h3>
+      <p class="hint">Financial, relational, professional, values-based — name the lenses you're weighing.</p>
+      <div class="tag-wrap" id="factors-wrap" onclick="focusTagInput('factors-input')">
+        <input class="tag-input" id="factors-input" placeholder="e.g. financial risk, family impact…" onkeydown="addTag(event,'factors','factors-wrap','factors-input')">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Pre-mortem</div>
+      <h3>Imagine it fails. Why?</h3>
+      <p class="hint">Assume one year from now this decision looks terrible. What went wrong?</p>
+      <textarea id="f-premortem-fail" placeholder="The main risks were…" rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Pre-parade</div>
+      <h3>Imagine it succeeds. Then what?</h3>
+      <p class="hint">10/10/10: how does this look in 10 minutes, 10 months, 10 years if it works?</p>
+      <textarea id="f-premortem-win" placeholder="In the best case scenario…" rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Your Bet</div>
+      <h3>What's your chosen path &amp; confidence?</h3>
+      <textarea id="f-choice" placeholder="I'm going to… because…" rows="3" style="margin-bottom:14px;"></textarea>
+      <p class="hint" style="margin-bottom:10px;">How confident are you this is the right call?</p>
+      <div class="prob-wrap">
+        <input type="range" min="0" max="100" value="65" id="f-confidence" oninput="document.getElementById('conf-val').textContent=this.value+'%'">
+        <span class="prob-val" id="conf-val">65%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Expected Outcome</div>
+      <h3>What do you predict will happen?</h3>
+      <p class="hint">Write your prediction <em>before</em> the result. This is the core of the journal.</p>
+      <textarea id="f-prediction" placeholder="I expect that within [timeframe]…" rows="3"></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" onclick="clearFrame()">Clear</button>
+      <button class="btn-primary" onclick="saveDecision()">Save Decision →</button>
+    </div>
+  </div>
+
+  <!-- ===== REVIEW ===== -->
+  <div class="panel" id="panel-review">
+
+    <div class="card">
+      <div class="card-label">Select Decision</div>
+      <h3>Which decision are you reviewing?</h3>
+      <p class="hint">Only decisions you've already framed appear here.</p>
+      <select id="review-picker" onchange="loadReviewDecision()">
+        <option value="">— Choose a saved decision —</option>
+      </select>
+    </div>
+
+    <div id="review-form" style="display:none;">
+
+      <div class="card">
+        <div class="review-decision-title" id="rv-title"></div>
+        <div class="review-decision-meta" id="rv-meta"></div>
+        <div class="info-row" id="rv-chips"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Original Prediction</div>
+        <h3>What did you expect?</h3>
+        <div id="rv-prediction" style="font-size:0.88rem;color:var(--muted);line-height:1.6;background:var(--bg);border-radius:6px;padding:10px 12px;border:1px solid var(--border);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label emotion">Headspace · Now</div>
+        <h3>How are you feeling as you review this?</h3>
+        <p class="hint">Pride and relief distort upward. Regret and frustration distort downward. Duke: separate "I feel bad about the outcome" from "it was a bad decision."</p>
+        <div class="emoji-grid" id="rv-mood-grid">
+          <label class="emoji-opt" onclick="selectReviewMood(this,'calm')"><input type="radio" name="rv-mood" value="calm"><span class="emo">😌</span><span class="emo-label">Calm</span></label>
+          <label class="emoji-opt" onclick="selectReviewMood(this,'proud')"><input type="radio" name="rv-mood" value="proud"><span class="emo">😊</span><span class="emo-label">Proud</span></label>
+          <label class="emoji-opt" onclick="selectReviewMood(this,'regretful')"><input type="radio" name="rv-mood" value="regretful"><span class="emo">😞</span><span class="emo-label">Regretful</span></label>
+          <label class="emoji-opt" onclick="selectReviewMood(this,'relieved')"><input type="radio" name="rv-mood" value="relieved"><span class="emo">😅</span><span class="emo-label">Relieved</span></label>
+          <label class="emoji-opt" onclick="selectReviewMood(this,'frustrated')"><input type="radio" name="rv-mood" value="frustrated"><span class="emo">😠</span><span class="emo-label">Frustrated</span></label>
+          <label class="emoji-opt" onclick="selectReviewMood(this,'detached')"><input type="radio" name="rv-mood" value="detached"><span class="emo">🧘</span><span class="emo-label">Detached</span></label>
+        </div>
+        <div class="tilt-alert" id="rv-tilt-alert" style="margin-top:12px;">
+          ⚠️ <strong>Resulting risk.</strong> Strong emotions during review can cause you to misread whether the process was sound. Try to hold the question: "Given what I knew then, was this a reasonable bet?"
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Actual Outcome</div>
+        <h3>What actually happened?</h3>
+        <p class="hint">Be honest. Resist the urge to rewrite history.</p>
+        <textarea id="rv-outcome" placeholder="What occurred was…" rows="3"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Outcome vs Expectation</div>
+        <h3>How did it compare?</h3>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="better"><span>😊 Better</span></label>
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="expected" checked><span>😐 As expected</span></label>
+          <label class="radio-btn"><input type="radio" name="outcome-cmp" value="worse"><span>😬 Worse</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Resulting vs Deciding</div>
+        <h3>Was it a good decision, regardless of outcome?</h3>
+        <p class="hint">A bad outcome doesn't make a bad decision. Evaluate your process, not the luck.</p>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="good"><span>✓ Good process</span></label>
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="mixed" checked><span>~ Mixed</span></label>
+          <label class="radio-btn"><input type="radio" name="process-cmp" value="poor"><span>✗ Poor process</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Luck vs Skill</div>
+        <h3>How much was luck a factor?</h3>
+        <div class="prob-wrap">
+          <input type="range" min="0" max="100" value="30" id="rv-luck" oninput="document.getElementById('luck-val').textContent=this.value+'%'">
+          <span class="prob-val" id="luck-val">30%</span>
+        </div>
+        <p class="hint" style="margin-top:10px;">0% = entirely skill/process · 100% = entirely luck</p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Learnings</div>
+        <h3>What will you do differently?</h3>
+        <p class="hint">This is the compound interest of good decision-making — what updates your model?</p>
+        <textarea id="rv-learnings" placeholder="Next time I will… / I underweighted… / I should have asked…" rows="4"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" onclick="cancelReview()">Cancel</button>
+        <button class="btn-primary" onclick="saveReview()">Save Review ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOG ===== -->
+  <div class="panel" id="panel-log">
+
+    <div class="card">
+      <div class="card-label export-lbl">Data · Export &amp; Import</div>
+      <h3>Sync across devices</h3>
+      <p class="hint">Export your decisions as a JSON file to back up or transfer to another device. Import merges without duplicating.</p>
+      <div class="export-row">
+        <button class="btn-green" onclick="exportData()">⬇ Export JSON</button>
+        <button class="btn-outline-green" onclick="document.getElementById('import-file').click()">⬆ Import JSON</button>
+        <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+      </div>
+    </div>
+
+    <div class="summary-grid" id="summary-grid" style="display:none;">
+      <div class="summary-stat"><div class="big" id="stat-total">0</div><div class="label">Decisions</div></div>
+      <div class="summary-stat"><div class="big" id="stat-reviewed">0</div><div class="label">Reviewed</div></div>
+      <div class="summary-stat"><div class="big" id="stat-avg-conf">—</div><div class="label">Avg Confidence</div></div>
+      <div class="summary-stat"><div class="big" id="stat-calibration">—</div><div class="label">Calibration</div></div>
+    </div>
+
+    <div class="insight-box" id="insight-box" style="display:none;">
+      <h4>Pattern Insight</h4>
+      <div id="insight-text"></div>
+    </div>
+
+    <div class="decisions-list" id="decisions-list">
+      <div class="empty-state">
+        <div class="emoji">🎲</div>
+        <p>No decisions yet.<br>Go to <strong>Frame</strong> to log your first one.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="attribution">Inspired by Annie Duke's <em>Thinking in Bets</em> and <em>Quit</em>. Independent personal tool.</p>
+
+</div>
+
+<script>
+  let tags = { stakeholders: [], factors: [] };
+  let decisions = JSON.parse(localStorage.getItem('dj-decisions') || '[]');
+
+  const TILT_MOODS = ['anxious','pressured','depleted'];
+  const REVIEW_TILT_MOODS = ['regretful','frustrated','proud'];
+  const MOOD_EMOJI = {calm:'😌',focused:'🎯',anxious:'😰',pressured:'😤',excited:'🤩',depleted:'😔',proud:'😊',regretful:'😞',relieved:'😅',frustrated:'😠',detached:'🧘'};
+
+  function showTab(tab) {
+    ['frame','review','log'].forEach(t => {
+      document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+      document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    });
+    if (tab === 'review') populateReviewPicker();
+    if (tab === 'log') renderLog();
+  }
+
+  function selectMood(el, val) {
+    document.querySelectorAll('#mood-grid .emoji-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+    document.getElementById('tilt-alert').classList.toggle('show', TILT_MOODS.includes(val));
+    document.getElementById('headspace-card').classList.toggle('tilt-warning', TILT_MOODS.includes(val));
+  }
+
+  function selectReviewMood(el, val) {
+    document.querySelectorAll('#rv-mood-grid .emoji-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+    document.getElementById('rv-tilt-alert').classList.toggle('show', REVIEW_TILT_MOODS.includes(val));
+  }
+
+  function focusTagInput(id) { document.getElementById(id).focus(); }
+
+  function addTag(e, key, wrapId, inputId) {
+    if (e.key !== 'Enter' && e.key !== ',') return;
+    e.preventDefault();
+    const inp = document.getElementById(inputId);
+    const val = inp.value.trim().replace(/,$/, '');
+    if (!val) return;
+    tags[key].push(val);
+    inp.value = '';
+    renderTags(key, wrapId, inputId);
+  }
+
+  function removeTagItem(key, wrapId, inputId, idx) {
+    tags[key].splice(idx, 1);
+    renderTags(key, wrapId, inputId);
+  }
+
+  function renderTags(key, wrapId, inputId) {
+    const wrap = document.getElementById(wrapId);
+    const inp = document.getElementById(inputId);
+    wrap.innerHTML = '';
+    tags[key].forEach((t, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.innerHTML = `${t}<button onclick="removeTagItem('${key}','${wrapId}','${inputId}',${i})">×</button>`;
+      wrap.appendChild(span);
+    });
+    wrap.appendChild(inp);
+  }
+
+  function addOption() {
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.innerHTML = `<input type="text" placeholder="Option…"><button class="btn-icon" onclick="removeOption(this)">✕</button>`;
+    document.getElementById('options-list').appendChild(row);
+  }
+  function removeOption(btn) {
+    if (document.querySelectorAll('.option-row').length <= 1) return;
+    btn.parentElement.remove();
+  }
+
+  function saveDecision() {
+    const topic = document.getElementById('f-topic').value.trim();
+    if (!topic) { alert('Please describe the decision first.'); return; }
+    const moodEl = document.querySelector('input[name="mood"]:checked');
+    const options = [...document.querySelectorAll('#options-list .option-row input')].map(i => i.value.trim()).filter(Boolean);
+    decisions.unshift({
+      id: Date.now(),
+      date: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'}),
+      topic,
+      mood: moodEl ? moodEl.value : null,
+      headspaceNote: document.getElementById('f-headspace-note').value.trim(),
+      stakeholders: [...tags.stakeholders],
+      factors: [...tags.factors],
+      options,
+      premortFail: document.getElementById('f-premortem-fail').value.trim(),
+      premortWin: document.getElementById('f-premortem-win').value.trim(),
+      choice: document.getElementById('f-choice').value.trim(),
+      confidence: +document.getElementById('f-confidence').value,
+      prediction: document.getElementById('f-prediction').value.trim(),
+      status: 'pending',
+      review: null
+    });
+    save();
+    clearFrame();
+    showTab('log');
+  }
+
+  function clearFrame() {
+    ['f-topic','f-headspace-note','f-premortem-fail','f-premortem-win','f-choice','f-prediction'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-confidence').value = 65;
+    document.getElementById('conf-val').textContent = '65%';
+    document.querySelectorAll('#mood-grid .emoji-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('tilt-alert').classList.remove('show');
+    document.getElementById('headspace-card').classList.remove('tilt-warning');
+    tags.stakeholders = []; tags.factors = [];
+    renderTags('stakeholders','stakeholder-wrap','stakeholder-input');
+    renderTags('factors','factors-wrap','factors-input');
+    document.getElementById('options-list').innerHTML = `
+      <div class="option-row"><input type="text" placeholder="Option A…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>
+      <div class="option-row"><input type="text" placeholder="Option B…"><button class="btn-icon" onclick="removeOption(this)">✕</button></div>`;
+  }
+
+  function populateReviewPicker() {
+    const sel = document.getElementById('review-picker');
+    sel.innerHTML = '<option value="">— Choose a saved decision —</option>';
+    decisions.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.topic.substring(0,55)}${d.topic.length>55?'…':''} (${d.date})${d.status==='reviewed'?' ✓':''}`;
+      sel.appendChild(opt);
+    });
+    document.getElementById('review-form').style.display = 'none';
+  }
+
+  function loadReviewDecision() {
+    const id = +document.getElementById('review-picker').value;
+    if (!id) { document.getElementById('review-form').style.display = 'none'; return; }
+    const d = decisions.find(x => x.id === id);
+    if (!d) return;
+
+    document.getElementById('rv-title').textContent = d.topic;
+    const moodStr = d.mood ? ` · ${MOOD_EMOJI[d.mood]||''} ${d.mood} at decision time` : '';
+    document.getElementById('rv-meta').textContent = `Framed ${d.date} · Confidence ${d.confidence}%${moodStr}`;
+
+    const chips = document.getElementById('rv-chips');
+    chips.innerHTML = '';
+    d.stakeholders.forEach(t => { const c=document.createElement('span'); c.className='info-chip'; c.textContent=t; chips.appendChild(c); });
+    d.factors.forEach(t => { const c=document.createElement('span'); c.className='info-chip'; c.textContent=t; chips.appendChild(c); });
+    if (d.mood) { const m=document.createElement('span'); m.className='emotion-chip'; m.textContent=`${MOOD_EMOJI[d.mood]||''} ${d.mood}`; chips.appendChild(m); }
+
+    document.getElementById('rv-prediction').textContent = d.prediction || '(no prediction recorded)';
+    document.querySelectorAll('#rv-mood-grid .emoji-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('rv-tilt-alert').classList.remove('show');
+
+    if (d.review) {
+      document.getElementById('rv-outcome').value = d.review.outcome || '';
+      document.querySelector(`input[name="outcome-cmp"][value="${d.review.outcomeCmp}"]`).checked = true;
+      document.querySelector(`input[name="process-cmp"][value="${d.review.processCmp}"]`).checked = true;
+      document.getElementById('rv-luck').value = d.review.luck || 30;
+      document.getElementById('luck-val').textContent = (d.review.luck||30)+'%';
+      document.getElementById('rv-learnings').value = d.review.learnings || '';
+      if (d.review.reviewMood) {
+        const mel = document.querySelector(`input[name="rv-mood"][value="${d.review.reviewMood}"]`);
+        if (mel) { mel.checked = true; mel.closest('.emoji-opt').classList.add('selected'); }
+      }
+    } else {
+      document.getElementById('rv-outcome').value = '';
+      document.querySelector('input[name="outcome-cmp"][value="expected"]').checked = true;
+      document.querySelector('input[name="process-cmp"][value="mixed"]').checked = true;
+      document.getElementById('rv-luck').value = 30;
+      document.getElementById('luck-val').textContent = '30%';
+      document.getElementById('rv-learnings').value = '';
+    }
+    document.getElementById('review-form').style.display = 'block';
+  }
+
+  function cancelReview() {
+    document.getElementById('review-picker').value = '';
+    document.getElementById('review-form').style.display = 'none';
+  }
+
+  function saveReview() {
+    const id = +document.getElementById('review-picker').value;
+    const d = decisions.find(x => x.id === id);
+    if (!d) return;
+    const rvMoodEl = document.querySelector('input[name="rv-mood"]:checked');
+    d.status = 'reviewed';
+    d.review = {
+      outcome: document.getElementById('rv-outcome').value.trim(),
+      outcomeCmp: document.querySelector('input[name="outcome-cmp"]:checked').value,
+      processCmp: document.querySelector('input[name="process-cmp"]:checked').value,
+      luck: +document.getElementById('rv-luck').value,
+      learnings: document.getElementById('rv-learnings').value.trim(),
+      reviewMood: rvMoodEl ? rvMoodEl.value : null,
+      reviewDate: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})
+    };
+    save();
+    cancelReview();
+    showTab('log');
+  }
+
+  function renderLog() {
+    const list = document.getElementById('decisions-list');
+    const grid = document.getElementById('summary-grid');
+    const insightBox = document.getElementById('insight-box');
+
+    if (!decisions.length) {
+      grid.style.display = 'none'; insightBox.style.display = 'none';
+      list.innerHTML = `<div class="empty-state"><div class="emoji">🎲</div><p>No decisions yet.<br>Go to <strong>Frame</strong> to log your first one.</p></div>`;
+      return;
+    }
+
+    grid.style.display = 'grid';
+    const reviewed = decisions.filter(d => d.status === 'reviewed');
+    const avgConf = Math.round(decisions.reduce((s,d)=>s+d.confidence,0)/decisions.length);
+    const calibration = reviewed.length ? Math.round(reviewed.filter(d=>d.review.outcomeCmp==='expected').length/reviewed.length*100)+'%' : '—';
+    document.getElementById('stat-total').textContent = decisions.length;
+    document.getElementById('stat-reviewed').textContent = reviewed.length;
+    document.getElementById('stat-avg-conf').textContent = avgConf+'%';
+    document.getElementById('stat-calibration').textContent = calibration;
+
+    if (reviewed.length >= 2) {
+      const tiltBad = reviewed.filter(d => TILT_MOODS.includes(d.mood) && d.review.outcomeCmp==='worse').length;
+      const overconf = reviewed.filter(d => d.review.outcomeCmp==='worse' && d.confidence>=70).length;
+      const goodProc = reviewed.filter(d => d.review.processCmp==='good').length;
+      let insight = '';
+      if (tiltBad >= 2) insight = `${tiltBad} decisions made under anxious, pressured, or depleted states led to worse-than-expected outcomes. Strong tilt signal — consider a 24-hour rule when in those states.`;
+      else if (overconf > reviewed.length * 0.4) insight = `Over-confidence pattern: ${overconf} of ${reviewed.length} reviewed decisions had high confidence but worse-than-expected outcomes. Try widening your uncertainty range.`;
+      else if (goodProc/reviewed.length > 0.7) insight = `Strong process discipline: ${goodProc} of ${reviewed.length} reviewed decisions rated as good process regardless of outcome.`;
+      else insight = `Keep reviewing decisions — patterns in your reasoning and emotional state will emerge as the log grows.`;
+      document.getElementById('insight-text').textContent = insight;
+      insightBox.style.display = 'block';
+    } else { insightBox.style.display = 'none'; }
+
+    list.innerHTML = '';
+    decisions.forEach(d => {
+      const item = document.createElement('div');
+      item.className = 'decision-item';
+      const badge = d.status==='reviewed' ? `<span class="badge badge-reviewed">Reviewed</span>` : `<span class="badge badge-pending">Pending review</span>`;
+      const moodBit = d.mood ? `<span>${MOOD_EMOJI[d.mood]||''} ${d.mood}</span>` : '';
+      let reviewLine = '';
+      if (d.review) {
+        const lbl = {better:'Better than expected',expected:'As expected',worse:'Worse than expected'};
+        const cls = {better:'outcome-better',expected:'outcome-expected',worse:'outcome-worse'};
+        reviewLine = `<span class="${cls[d.review.outcomeCmp]}">${lbl[d.review.outcomeCmp]}</span> · Luck ${d.review.luck}%`;
+      }
+      item.innerHTML = `<h4>${d.topic}</h4><div class="meta">${badge}<span>${d.date}</span><span>Confidence ${d.confidence}%</span>${moodBit}${reviewLine?`<span>${reviewLine}</span>`:''}</div>`;
+      item.onclick = () => { showTab('review'); setTimeout(()=>{ document.getElementById('review-picker').value=d.id; loadReviewDecision(); },50); };
+      list.appendChild(item);
+    });
+  }
+
+  function exportData() {
+    if (!decisions.length) { alert('No decisions to export yet.'); return; }
+    const blob = new Blob([JSON.stringify(decisions, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `decision-journal-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (!Array.isArray(imported)) throw new Error();
+        const existing = new Set(decisions.map(d=>d.id));
+        const newOnes = imported.filter(d=>!existing.has(d.id));
+        decisions = [...decisions, ...newOnes].sort((a,b)=>b.id-a.id);
+        save();
+        renderLog();
+        alert(`Import complete. ${newOnes.length} new decision(s) added.`);
+      } catch { alert('Import failed — file may be corrupt or wrong format.'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function save() { localStorage.setItem('dj-decisions', JSON.stringify(decisions)); }
+</script>
+</body>
+</html>
